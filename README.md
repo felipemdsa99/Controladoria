@@ -165,7 +165,7 @@ Graduado em Análise e Desenvolvimento de Sistemas
 Pós-graduando em Ciência de Dados e Inteligência Artificial
 
 LinkedIn:
-(linkedin.com/in/felipemartinsdesa)
+(https://linkedin.com/in/felipemartinsdesa)
 
 GitHub:
 (https://github.com/felipemdsa99))
