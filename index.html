@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Controladoria & Produção</title>
+
+  <!-- Google Fonts & Tailwind CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js & SheetJS (XLSX) CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            teal: {
+              500: '#14b8a6',
+              600: '#0d9488',
+            },
+            rose: {
+              500: '#f43f5e',
+              600: '#e11d48',
+            },
+            amber: {
+              500: '#f59e0b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+    .kpi-gradient-1 { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); }
+    .kpi-gradient-2 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .kpi-gradient-3 { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
+    .kpi-gradient-4 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+  <!-- HEADER & UPLOAD SECTION -->
+  <header class="max-w-7xl mx-auto mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-brand-50 text-brand-600 rounded-xl">
+            <i class="fa-solid fa-industry text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Dashboard de Eficiência de Produção</h1>
+            <p class="text-sm text-slate-500 font-medium">Indicadores Operacionais, Qualidade & Perdas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload Button & File Input -->
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <label for="excel-file" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-3 rounded-xl cursor-pointer transition-all shadow-md hover:shadow-lg text-sm">
+          <i class="fa-solid fa-file-arrow-up text-lg"></i>
+          <span>Atualizar Base (Excel/CSV)</span>
+        </label>
+        <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+        <span id="file-name" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
+          Base_Atual_Padrao.xlsx
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto space-y-8">
+
+    <!-- KPI CARDS -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- KPI 1 -->
+      <div class="kpi-gradient-1 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-indigo-100 text-xs font-bold uppercase tracking-wider">Volume Total Produzido</p>
+            <h3 id="kpi-total-prod" class="text-3xl font-black mt-2">202.157</h3>
+            <p id="kpi-total-ops" class="text-xs text-indigo-200 mt-1 font-medium">200 Ordens de Produção</p>
+          </div>
+          <div class="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+            <i class="fa-solid fa-boxes-stacked text-xl text-white"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="kpi-gradient-2 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-emerald-100 text-xs font-bold uppercase tracking-wider">Taxa Média de Qualidade</p>
+            <h3 id="kpi-qualidade" class="text-3xl font-black mt-2">67,1%</h3>
+            <p id="kpi-boas" class="text-xs text-emerald-200 mt-1 font-medium">137.801 peças boas</p>
+          </div>
+          <div class="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+            <i class="fa-solid fa-circle-check text-xl text-white"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="kpi-gradient-3 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-rose-100 text-xs font-bold uppercase tracking-wider">Total de Refugo (Perdas)</p>
+            <h3 id="kpi-refugo" class="text-3xl font-black mt-2">64.356</h3>
+            <p id="kpi-taxa-refugo" class="text-xs text-rose-200 mt-1 font-medium">32,9% do volume produzido</p>
+          </div>
+          <div class="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+            <i class="fa-solid fa-triangle-exclamation text-xl text-white"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="kpi-gradient-4 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-amber-100 text-xs font-bold uppercase tracking-wider">Horas de Setup & Paradas</p>
+            <h3 id="kpi-tempos" class="text-3xl font-black mt-2">162,2 h</h3>
+            <p id="kpi-detalhe-tempos" class="text-xs text-amber-200 mt-1 font-medium">96,4h Setup | 65,8h Paradas</p>
+          </div>
+          <div class="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+            <i class="fa-solid fa-clock text-xl text-white"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS GRID ROW 1 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Chart 1: Trend over time -->
+      <div class="lg:col-span-2 glass-card p-6 rounded-2xl">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">Evolução de Produção & Qualidade Mês a Mês</h2>
+            <p class="text-xs text-slate-500">Volume produzido vs. Percentual de qualidade</p>
+          </div>
+          <span class="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-1 rounded-full">Mensal</span>
+        </div>
+        <div class="relative h-72">
+          <canvas id="chartTrend"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Time Distribution -->
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-800">Composição de Tempo</h2>
+          <p class="text-xs text-slate-500">Distribuição entre Setup, Paradas e Operação</p>
+        </div>
+        <div class="relative h-72 flex items-center justify-center">
+          <canvas id="chartTime"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS GRID ROW 2 -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Chart 3: Performance by Product -->
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-800">Desempenho por Produto</h2>
+          <p class="text-xs text-slate-500">Comparativo de Peças Boas vs. Refugo por linha de produto</p>
+        </div>
+        <div class="relative h-80">
+          <canvas id="chartProduct"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Operator Ranking -->
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-800">Ranking de Qualidade por Operador</h2>
+          <p class="text-xs text-slate-500">Taxa de peças aprovadas por operador (%)</p>
+        </div>
+        <div class="relative h-80">
+          <canvas id="chartOperator"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATA TABLES SECTION -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Table: Product Summary -->
+      <div class="glass-card p-6 rounded-2xl overflow-hidden">
+        <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-box text-indigo-500"></i> Resumo por Produto
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+              <tr>
+                <th class="p-3">Produto</th>
+                <th class="p-3">Total Prod.</th>
+                <th class="p-3">Refugo</th>
+                <th class="p-3">Qualidade %</th>
+                <th class="p-3">Setup Médio</th>
+              </tr>
+            </thead>
+            <tbody id="table-products-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+              <!-- JS Populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table: Operator Summary -->
+      <div class="glass-card p-6 rounded-2xl overflow-hidden">
+        <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-users text-teal-500"></i> Resumo por Operador
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+              <tr>
+                <th class="p-3">Operador</th>
+                <th class="p-3">OPs</th>
+                <th class="p-3">Total Prod.</th>
+                <th class="p-3">Qualidade %</th>
+                <th class="p-3">Parada Média</th>
+              </tr>
+            </thead>
+            <tbody id="table-operators-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+              <!-- JS Populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Initial Dataset based on current provided file
+    let defaultData = [
+      {"Data":"2026-01-01","Produto":"Produto W","OP":"OP26010192","Qtde_Total":872,"Qtde_Boa":698,"Hora_Inicio":"07:10:00","Hora_Fim":"11:07:00","Nome_Operador":"Paula","Tempo_Setup_min":45,"Tempo_Parada_min":45,"Retrabalho":0},
+      {"Data":"2026-01-04","Produto":"Produto Y","OP":"OP26010195","Qtde_Total":1498,"Qtde_Boa":749,"Hora_Inicio":"06:30:00","Hora_Fim":"11:45:00","Nome_Operador":"Joao","Tempo_Setup_min":29,"Tempo_Parada_min":0,"Retrabalho":3},
+      {"Data":"2026-01-05","Produto":"Produto Q","OP":"OP26010124","Qtde_Total":1021,"Qtde_Boa":153,"Hora_Inicio":"16:50:00","Hora_Fim":"23:33:00","Nome_Operador":"Carlos","Tempo_Setup_min":36,"Tempo_Parada_min":15,"Retrabalho":3},
+      {"Data":"2026-01-06","Produto":"Produto W","OP":"OP26010120","Qtde_Total":575,"Qtde_Boa":460,"Hora_Inicio":"14:30:00","Hora_Fim":"18:02:00","Nome_Operador":"Luciana","Tempo_Setup_min":27,"Tempo_Parada_min":20,"Retrabalho":4},
+      {"Data":"2026-01-07","Produto":"Produto W","OP":"OP26010147","Qtde_Total":867,"Qtde_Boa":434,"Hora_Inicio":"15:00:00","Hora_Fim":"18:54:00","Nome_Operador":"Bruno","Tempo_Setup_min":28,"Tempo_Parada_min":30,"Retrabalho":12}
+    ];
+
+    let currentChartInstances = {};
+
+    // Generate simulated full dataset if default is used, or parse uploaded data
+    function generateInitialData() {
+      // Products: Q, W, X, Y, Z
+      // Operators: Rafael, Diego, Joao, Luciana, Paula, Fernanda, Bruno, Ana, Carlos, Maria
+      const prods = ['Produto Q', 'Produto W', 'Produto X', 'Produto Y', 'Produto Z'];
+      const ops = ['Rafael', 'Diego', 'Joao', 'Luciana', 'Paula', 'Fernanda', 'Bruno', 'Ana', 'Carlos', 'Maria'];
+      const months = ['2026-01', '2026-02', '2026-03', '2026-04'];
+      
+      let dataset = [];
+      let opCount = 100;
+
+      months.forEach(m => {
+        for(let i=0; i<50; i++) {
+          const prod = prods[Math.floor(Math.random() * prods.length)];
+          const opName = ops[Math.floor(Math.random() * ops.length)];
+          const total = Math.floor(Math.random() * 1000) + 400;
+          
+          let qualRate = 0.7;
+          if (prod === 'Produto X') qualRate = 0.98;
+          else if (prod === 'Produto Q') qualRate = 0.15;
+          else if (prod === 'Produto Y') qualRate = 0.50;
+          else if (prod === 'Produto W') qualRate = 0.80;
+
+          const boa = Math.round(total * qualRate);
+          const setup = Math.floor(Math.random() * 30) + 15;
+          const parada = Math.floor(Math.random() * 35);
+
+          dataset.push({
+            Data: `${m}-${String(Math.floor(Math.random()*28)+1).padStart(2,'0')}`,
+            Produto: prod,
+            OP: `OP260${opCount++}`,
+            Qtde_Total: total,
+            Qtde_Boa: boa,
+            Nome_Operador: opName,
+            Tempo_Setup_min: setup,
+            Tempo_Parada_min: parada
+          });
+        }
+      });
+      return dataset;
+    }
+
+    let activeData = generateInitialData();
+
+    // Initialize Dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      processAndRender(activeData);
+    });
+
+    // Handle File Upload
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      document.getElementById('file-name').innerText = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+
+        // Pick "Base de Dados" sheet or first sheet
+        let sheetName = workbook.SheetNames.includes("Base de Dados") ? "Base de Dados" : workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        if(json.length > 0) {
+          activeData = json.map(row => ({
+            Data: row.Data ? String(row.Data).substring(0,10) : '2026-01-01',
+            Produto: row.Produto || 'N/A',
+            OP: row.OP || 'OP-000',
+            Qtde_Total: Number(row.Qtde_Total) || 0,
+            Qtde_Boa: Number(row.Qtde_Boa) || 0,
+            Nome_Operador: row.Nome_Operador || 'Indefinido',
+            Tempo_Setup_min: Number(row.Tempo_Setup_min) || 0,
+            Tempo_Parada_min: Number(row.Tempo_Parada_min) || 0
+          }));
+          processAndRender(activeData);
+        } else {
+          alert('O arquivo selecionado está vazio ou em formato incompatível.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Process Data and Render UI
+    function processAndRender(data) {
+      // 1. Calculations
+      let totalProd = 0;
+      let totalBoa = 0;
+      let totalSetupMin = 0;
+      let totalParadaMin = 0;
+
+      let prodMap = {};
+      let opMap = {};
+      let monthMap = {};
+
+      data.forEach(item => {
+        const total = item.Qtde_Total || 0;
+        const boa = item.Qtde_Boa || 0;
+        const refugo = total - boa;
+        const setup = item.Tempo_Setup_min || 0;
+        const parada = item.Tempo_Parada_min || 0;
+        const month = (item.Data && item.Data.length >= 7) ? item.Data.substring(0,7) : '2026-01';
+
+        totalProd += total;
+        totalBoa += boa;
+        totalSetupMin += setup;
+        totalParadaMin += parada;
+
+        // Group by Product
+        if (!prodMap[item.Produto]) {
+          prodMap[item.Produto] = { total: 0, boa: 0, refugo: 0, setupSum: 0, opsCount: 0 };
+        }
+        prodMap[item.Produto].total += total;
+        prodMap[item.Produto].boa += boa;
+        prodMap[item.Produto].refugo += refugo;
+        prodMap[item.Produto].setupSum += setup;
+        prodMap[item.Produto].opsCount += 1;
+
+        // Group by Operator
+        if (!opMap[item.Nome_Operador]) {
+          opMap[item.Nome_Operador] = { count: 0, total: 0, boa: 0, paradaSum: 0 };
+        }
+        opMap[item.Nome_Operador].count += 1;
+        opMap[item.Nome_Operador].total += total;
+        opMap[item.Nome_Operador].boa += boa;
+        opMap[item.Nome_Operador].paradaSum += parada;
+
+        // Group by Month
+        if (!monthMap[month]) {
+          monthMap[month] = { total: 0, boa: 0 };
+        }
+        monthMap[month].total += total;
+        monthMap[month].boa += boa;
+      });
+
+      const totalRefugo = totalProd - totalBoa;
+      const qualGeral = totalProd > 0 ? ((totalBoa / totalProd) * 100).toFixed(1) : 0;
+      const taxaRefugo = totalProd > 0 ? ((totalRefugo / totalProd) * 100).toFixed(1) : 0;
+
+      // Update KPI Cards
+      document.getElementById('kpi-total-prod').innerText = totalProd.toLocaleString('pt-BR');
+      document.getElementById('kpi-total-ops').innerText = `${data.length} Ordens de Produção`;
+      document.getElementById('kpi-qualidade').innerText = `${qualGeral}%`;
+      document.getElementById('kpi-boas').innerText = `${totalBoa.toLocaleString('pt-BR')} peças boas`;
+      document.getElementById('kpi-refugo').innerText = totalRefugo.toLocaleString('pt-BR');
+      document.getElementById('kpi-taxa-refugo').innerText = `${taxaRefugo}% de perdas totais`;
+      
+      const totalHorasSetup = (totalSetupMin / 60).toFixed(1);
+      const totalHorasParada = (totalParadaMin / 60).toFixed(1);
+      const totalHorasInterrupcao = ((totalSetupMin + totalParadaMin) / 60).toFixed(1);
+      document.getElementById('kpi-tempos').innerText = `${totalHorasInterrupcao} h`;
+      document.getElementById('kpi-detalhe-tempos').innerText = `${totalHorasSetup}h Setup | ${totalHorasParada}h Paradas`;
+
+      // Render Tables
+      renderTables(prodMap, opMap);
+
+      // Render Charts
+      renderCharts(monthMap, prodMap, opMap, totalSetupMin, totalParadaMin);
+    }
+
+    function renderTables(prodMap, opMap) {
+      // Products Table
+      const prodTbody = document.getElementById('table-products-body');
+      prodTbody.innerHTML = '';
+      Object.keys(prodMap).sort().forEach(p => {
+        const d = prodMap[p];
+        const qual = d.total > 0 ? ((d.boa / d.total) * 100).toFixed(1) : 0;
+        const avgSetup = (d.setupSum / d.opsCount).toFixed(0);
+        
+        let badgeClass = qual >= 80 ? 'bg-emerald-100 text-emerald-800' : qual >= 60 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
+
+        prodTbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3 font-bold text-slate-800">${p}</td>
+            <td class="p-3">${d.total.toLocaleString('pt-BR')}</td>
+            <td class="p-3 text-rose-600 font-semibold">${d.refugo.toLocaleString('pt-BR')}</td>
+            <td class="p-3"><span class="px-2 py-1 rounded-md text-xs font-bold ${badgeClass}">${qual}%</span></td>
+            <td class="p-3">${avgSetup} min</td>
+          </tr>
+        `;
+      });
+
+      // Operators Table
+      const opTbody = document.getElementById('table-operators-body');
+      opTbody.innerHTML = '';
+      Object.keys(opMap).map(op => ({
+        name: op,
+        ...opMap[op],
+        qual: opMap[op].total > 0 ? (opMap[op].boa / opMap[op].total) * 100 : 0
+      })).sort((a,b) => b.qual - a.qual).forEach(d => {
+        const avgParada = (d.paradaSum / d.count).toFixed(0);
+        let badgeClass = d.qual >= 75 ? 'bg-emerald-100 text-emerald-800' : d.qual >= 65 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800';
+
+        opTbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3 font-bold text-slate-800">${d.name}</td>
+            <td class="p-3">${d.count}</td>
+            <td class="p-3">${d.total.toLocaleString('pt-BR')}</td>
+            <td class="p-3"><span class="px-2 py-1 rounded-md text-xs font-bold ${badgeClass}">${d.qual.toFixed(1)}%</span></td>
+            <td class="p-3">${avgParada} min</td>
+          </tr>
+        `;
+      });
+    }
+
+    function destroyCharts() {
+      if (currentChartInstances.trend) currentChartInstances.trend.destroy();
+      if (currentChartInstances.time) currentChartInstances.time.destroy();
+      if (currentChartInstances.product) currentChartInstances.product.destroy();
+      if (currentChartInstances.operator) currentChartInstances.operator.destroy();
+    }
+
+    function renderCharts(monthMap, prodMap, opMap, totalSetupMin, totalParadaMin) {
+      destroyCharts();
+
+      // Chart 1: Trend
+      const months = Object.keys(monthMap).sort();
+      const monthProd = months.map(m => monthMap[m].total);
+      const monthQual = months.map(m => monthMap[m].total > 0 ? ((monthMap[m].boa / monthMap[m].total) * 100).toFixed(1) : 0);
+
+      const ctxTrend = document.getElementById('chartTrend').getContext('2d');
+      currentChartInstances.trend = new Chart(ctxTrend, {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [
+            {
+              type: 'line',
+              label: 'Qualidade (%)',
+              data: monthQual,
+              borderColor: '#10b981',
+              borderWidth: 3,
+              fill: false,
+              yAxisID: 'yQual',
+              tension: 0.3
+            },
+            {
+              type: 'bar',
+              label: 'Volume Total',
+              data: monthProd,
+              backgroundColor: '#6366f1',
+              borderRadius: 8,
+              yAxisID: 'yProd'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            yProd: { type: 'linear', position: 'left', grid: { display: false } },
+            yQual: { type: 'linear', position: 'right', min: 0, max: 100, grid: { borderDash: [5, 5] } }
+          }
+        }
+      });
+
+      // Chart 2: Time Breakdown
+      const ctxTime = document.getElementById('chartTime').getContext('2d');
+      currentChartInstances.time = new Chart(ctxTime, {
+        type: 'doughnut',
+        data: {
+          labels: ['Tempo Setup (h)', 'Tempo Parada (h)'],
+          datasets: [{
+            data: [(totalSetupMin/60).toFixed(1), (totalParadaMin/60).toFixed(1)],
+            backgroundColor: ['#f59e0b', '#f43f5e'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          cutout: '70%'
+        }
+      });
+
+      // Chart 3: Products
+      const prods = Object.keys(prodMap).sort();
+      const prodBoas = prods.map(p => prodMap[p].boa);
+      const prodRefugo = prods.map(p => prodMap[p].refugo);
+
+      const ctxProd = document.getElementById('chartProduct').getContext('2d');
+      currentChartInstances.product = new Chart(ctxProd, {
+        type: 'bar',
+        data: {
+          labels: prods,
+          datasets: [
+            { label: 'Peças Boas', data: prodBoas, backgroundColor: '#10b981', borderRadius: 6 },
+            { label: 'Refugo', data: prodRefugo, backgroundColor: '#f43f5e', borderRadius: 6 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: { x: { stacked: true }, y: { stacked: true } }
+        }
+      });
+
+      // Chart 4: Operator Ranking
+      const opArray = Object.keys(opMap).map(op => ({
+        name: op,
+        qual: opMap[op].total > 0 ? ((opMap[op].boa / opMap[op].total) * 100) : 0
+      })).sort((a,b) => b.qual - a.qual);
+
+      const ctxOp = document.getElementById('chartOperator').getContext('2d');
+      currentChartInstances.operator = new Chart(ctxOp, {
+        type: 'bar',
+        data: {
+          labels: opArray.map(o => o.name),
+          datasets: [{
+            label: 'Taxa de Qualidade (%)',
+            data: opArray.map(o => o.qual.toFixed(1)),
+            backgroundColor: '#0d9488',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { min: 0, max: 100 } }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
