@@ -103,11 +103,6 @@ Clone o repositório
 git clone https://github.com/felipemdsa99/Controladoria.git
 ```
 
-Entre na pasta
-
-```bash
-cd dashboard-controladoria-producao
-```
 
 Abra o arquivo
 
