@@ -173,4 +173,4 @@ LinkedIn:
 (coloque aqui)
 
 GitHub:
-([coloque aqui](https://github.com/felipemdsa99))
+(https://github.com/felipemdsa99))
